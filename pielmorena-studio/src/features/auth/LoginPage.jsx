@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { supabase, supabaseConfigured } from '../../lib/supabaseClient'
 
 function LoginPage() {
   const navigate = useNavigate()
@@ -10,39 +11,26 @@ function LoginPage() {
   const [intentoLogin, setIntentoLogin] = useState(false)
   const [errorGeneral, setErrorGeneral] = useState('')
 
-  const esAdmin = correo.trim().toLowerCase() === 'admin@pielmorena'
+  const devBypass = import.meta.env.VITE_DEV_ADMIN_BYPASS === 'true'
+  const devAdminEmail = (import.meta.env.VITE_DEV_ADMIN_EMAIL || 'admin@pielmorena').toLowerCase()
 
   const validarCorreo = (valor) => {
-    if (valor.trim().toLowerCase() === 'admin@pielmorena') return true
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(valor)
   }
 
   const passwordRules = {
-    minimo: password.length >= 8,
-    mayuscula: /[A-Z]/.test(password),
-    minuscula: /[a-z]/.test(password),
-    numero: /[0-9]/.test(password),
-    simbolo: /[^A-Za-z0-9]/.test(password),
+    minimo: password.length >= 3,
   }
 
-  const passwordAdminValida = esAdmin && password === 'pielmorena123'
-
-  const passwordClienteFuerte =
-    passwordRules.minimo &&
-    passwordRules.mayuscula &&
-    passwordRules.minuscula &&
-    passwordRules.numero &&
-    passwordRules.simbolo
-
-  const passwordValida = esAdmin ? passwordAdminValida : passwordClienteFuerte
+  const passwordClienteFuerte = passwordRules.minimo
 
   const correoInvalido =
-    intentoLogin && (!correo.trim() || !validarCorreo(correo))
+    intentoLogin &&
+    (!correo.trim() || (!validarCorreo(correo) && !(devBypass && correo.trim().toLowerCase() === devAdminEmail)))
 
-  const passwordInvalido =
-    intentoLogin && (!password.trim() || !passwordValida)
+  const passwordInvalido = intentoLogin && !password.trim()
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault()
     setIntentoLogin(true)
     setErrorGeneral('')
@@ -52,7 +40,8 @@ function LoginPage() {
       return
     }
 
-    if (!validarCorreo(correo)) {
+    // Permitir el correo de bypass de desarrollo aunque no sea un email "válido"
+    if (!validarCorreo(correo) && !(devBypass && correo.trim().toLowerCase() === devAdminEmail)) {
       setErrorGeneral('Debe ingresar un correo electrónico válido.')
       return
     }
@@ -62,19 +51,39 @@ function LoginPage() {
       return
     }
 
-    if (!passwordValida) {
-      if (esAdmin) {
-        setErrorGeneral('La contraseña del administrador es incorrecta.')
-      } else {
-        setErrorGeneral('La contraseña debe ser fuerte.')
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: correo.trim().toLowerCase(),
+      password,
+    })
+
+    if (error) {
+      // Si está habilitado el bypass de admin en desarrollo, permitir acceso localmente
+      const devBypass = import.meta.env.VITE_DEV_ADMIN_BYPASS === 'true'
+      const devAdminEmail = (import.meta.env.VITE_DEV_ADMIN_EMAIL || 'admin@pielmorena').toLowerCase()
+      if (devBypass && correo.trim().toLowerCase() === devAdminEmail) {
+        // eslint-disable-next-line no-console
+        console.warn('Dev admin bypass enabled — permitting local admin login')
+        navigate('/dashboard')
+        return
       }
+
+      setErrorGeneral(error.message || 'Error al iniciar sesión')
       return
     }
 
-    if (esAdmin) {
+    // Verificar si es admin mediante la función RPC es_admin()
+    try {
+      const { data: isAdmin, error: rpcError } = await supabase.rpc('es_admin')
+      if (rpcError) {
+        navigate('/dashboard')
+        return
+      }
+
+      const adminFlag = Array.isArray(isAdmin) ? isAdmin[0] : isAdmin
+      if (adminFlag) navigate('/dashboard')
+      else navigate('/reservar')
+    } catch (err) {
       navigate('/dashboard')
-    } else {
-      navigate('/reservar')
     }
   }
 
@@ -112,6 +121,11 @@ function LoginPage() {
           </div>
 
           <div className="mx-auto w-full max-w-md lg:ml-auto">
+            {import.meta.env.DEV && !supabaseConfigured && (
+              <div className="mb-4 rounded-md bg-red-600/10 border border-red-500/30 px-3 py-2 text-sm text-red-200">
+                Supabase no configurado en el cliente (import.meta.env no tiene las vars).
+              </div>
+            )}
             <form
               onSubmit={handleLogin}
               className="rounded-[2rem] border border-[#d4af37]/35 bg-black/45 p-6 shadow-2xl backdrop-blur-2xl sm:p-8"
@@ -251,7 +265,7 @@ function LoginPage() {
                     </button>
                   </div>
 
-                  {!esAdmin && password && (
+                  {password && (
                     <div className="mt-3 rounded-2xl border border-white/10 bg-white/5 p-3">
                       <p className="mb-2 text-xs font-semibold text-white/65">
                         Requisitos de contraseña:
@@ -260,52 +274,10 @@ function LoginPage() {
                       <div className="grid gap-1 text-xs">
                         <p
                           className={
-                            passwordRules.minimo
-                              ? 'text-[#d4af37]'
-                              : 'text-red-300'
+                            passwordRules.minimo ? 'text-[#d4af37]' : 'text-red-300'
                           }
                         >
-                          {passwordRules.minimo ? '✓' : '•'} Mínimo 8 caracteres
-                        </p>
-
-                        <p
-                          className={
-                            passwordRules.mayuscula
-                              ? 'text-[#d4af37]'
-                              : 'text-red-300'
-                          }
-                        >
-                          {passwordRules.mayuscula ? '✓' : '•'} Una letra mayúscula
-                        </p>
-
-                        <p
-                          className={
-                            passwordRules.minuscula
-                              ? 'text-[#d4af37]'
-                              : 'text-red-300'
-                          }
-                        >
-                          {passwordRules.minuscula ? '✓' : '•'} Una letra minúscula
-                        </p>
-
-                        <p
-                          className={
-                            passwordRules.numero
-                              ? 'text-[#d4af37]'
-                              : 'text-red-300'
-                          }
-                        >
-                          {passwordRules.numero ? '✓' : '•'} Un número
-                        </p>
-
-                        <p
-                          className={
-                            passwordRules.simbolo
-                              ? 'text-[#d4af37]'
-                              : 'text-red-300'
-                          }
-                        >
-                          {passwordRules.simbolo ? '✓' : '•'} Un símbolo especial
+                          {passwordRules.minimo ? '✓' : '•'} Mínimo 3 caracteres
                         </p>
                       </div>
                     </div>

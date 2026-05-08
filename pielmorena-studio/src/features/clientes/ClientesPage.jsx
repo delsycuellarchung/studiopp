@@ -165,7 +165,8 @@ function ClientesPage() {
         </label>
 
         <div className="mt-5 flex flex-col gap-3 sm:flex-row">
-          <button className="rounded-2xl bg-black px-5 py-3 font-bold text-[#d4af37] transition hover:bg-[#d4af37] hover:text-black">
+          <button className="rounded-2xl bg-black px-6 py-3 font-bold text-[#d4af37] transition-colors duration-150 hover:bg-[#d4af37] hover:text-black flex items-center gap-2 shadow-lg hover:shadow-xl active:scale-95">
+            <img src="/icons/clientes.png" alt="Clientes" className="inline-block h-4 w-4" />
             {editandoId ? 'Actualizar cliente' : 'Registrar cliente'}
           </button>
 
@@ -173,7 +174,7 @@ function ClientesPage() {
             <button
               type="button"
               onClick={limpiarFormulario}
-              className="rounded-2xl border border-black/20 px-5 py-3 font-bold text-black transition hover:bg-black hover:text-white"
+              className="rounded-2xl border border-black/20 px-5 py-3 font-bold text-black transition-colors duration-150 hover:bg-black hover:text-white flex items-center gap-2"
             >
               Cancelar
             </button>
@@ -217,8 +218,9 @@ function ClientesPage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => editarCliente(cliente)}
-                  className="rounded-xl bg-black px-4 py-2 text-sm font-bold text-[#d4af37] transition hover:bg-[#d4af37] hover:text-black"
+                  className="rounded-xl bg-black px-4 py-2 text-sm font-bold text-[#d4af37] transition-colors duration-150 hover:bg-[#d4af37] hover:text-black flex items-center gap-2 shadow-sm active:scale-95"
                 >
+                  <img src="/icons/clientes.png" alt="Editar" className="inline-block h-4 w-4" />
                   Editar
                 </button>
 

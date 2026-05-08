@@ -33,22 +33,11 @@ function ReservasIcon() {
   )
 }
 
-function BloqueosIcon() {
-  return (
-    <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 7v5l3 2" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9 9 0 1 0-9-9 9 9 0 0 0 9 9Z" />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M5 5l14 14" />
-    </svg>
-  )
-}
 
 function DashboardPage() {
   const items = [
-    { title: 'Clientes', subtitle: 'Registrar y consultar clientes', to: '/clientes', icon: <ClientesIcon /> },
     { title: 'Servicios', subtitle: 'Gestionar precios y duración', to: '/servicios', icon: <ServiciosIcon /> },
     { title: 'Reservas', subtitle: 'Ver y organizar citas', to: '/reservas', icon: <ReservasIcon /> },
-    { title: 'Bloqueos', subtitle: 'Bloquear horarios ocupados', to: '/bloqueos', icon: <BloqueosIcon /> },
   ]
 
   return (
@@ -67,7 +56,7 @@ function DashboardPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-2 lg:grid-cols-2">
         {items.map((item) => (
           <Link
             key={item.to}
